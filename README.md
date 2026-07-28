@@ -9,7 +9,7 @@ A simple, guided check that tells CS2 players whether their mouse and mousepad a
 ### Option A — one click (Windows)
 
 1. Double-click **`serve.bat`** in this folder
-2. Open **http://localhost:8080** in your browser
+2. Open the URL shown in the terminal (usually **http://localhost:5500**)
 
 ### Option B — PowerShell
 
@@ -18,7 +18,7 @@ cd path\to\mouse-test
 .\serve.ps1
 ```
 
-Then open **http://localhost:8080**
+Then open the URL shown in the terminal.
 
 ### Option C — Python
 
@@ -26,7 +26,7 @@ Then open **http://localhost:8080**
 python -m http.server 8080
 ```
 
-Then open **http://localhost:8080**
+Then open the URL shown in the terminal.
 
 ### Option D — Node
 

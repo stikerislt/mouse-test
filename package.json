@@ -3,6 +3,6 @@
   "private": true,
   "description": "Guided mouse consistency check for CS2 players",
   "scripts": {
-    "start": "npx --yes serve . -l 8080"
+    "start": "npx --yes serve . -l 5500"
   }
 }
