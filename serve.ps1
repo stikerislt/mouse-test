@@ -2,11 +2,11 @@
 $port = 8080
 $root = $PSScriptRoot
 
-Write-Host ""
-Write-Host "  Calibra — local server" -ForegroundColor Cyan
+Write-Host ''
+Write-Host '  Calibra - local server' -ForegroundColor Cyan
 Write-Host "  Open: http://localhost:$port" -ForegroundColor Green
-Write-Host "  Press Ctrl+C to stop" -ForegroundColor DarkGray
-Write-Host ""
+Write-Host '  Press Ctrl+C to stop' -ForegroundColor DarkGray
+Write-Host ''
 
 Set-Location $root
 
@@ -25,7 +25,7 @@ if (Get-Command npx -ErrorAction SilentlyContinue) {
   exit $LASTEXITCODE
 }
 
-Write-Host "Need Python or Node.js. Install one, then run this script again." -ForegroundColor Red
-Write-Host "  Python: https://www.python.org/downloads/" -ForegroundColor Yellow
-Write-Host "  Node:   https://nodejs.org/" -ForegroundColor Yellow
+Write-Host 'Need Python or Node.js. Install one, then run this script again.' -ForegroundColor Red
+Write-Host '  Python: https://www.python.org/downloads/' -ForegroundColor Yellow
+Write-Host '  Node:   https://nodejs.org/' -ForegroundColor Yellow
 exit 1
