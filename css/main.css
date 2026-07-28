@@ -264,6 +264,38 @@ body::before {
   gap: 12px;
 }
 
+.check-skip-floating {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  pointer-events: auto;
+  background: rgba(22, 26, 33, 0.92);
+  border: 1px solid var(--border);
+}
+
+.check-lift-btn {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.check-esc-hint {
+  text-align: center;
+  margin-top: 8px;
+}
+
+.check-esc-hint kbd {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+
 .check-pulse {
   width: 12px;
   height: 12px;

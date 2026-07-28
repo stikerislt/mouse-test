@@ -29,7 +29,7 @@ export const CHECK_META = {
   smoothness: {
     title: 'Sensor smoothness',
     question: 'Are tiny movements smooth?',
-    instruction: 'Move the mouse very slowly — just a few millimeters at a time.',
+    instruction: 'Click Start, then move the mouse slowly inside the box above — small, gentle motions for about 5 seconds.',
   },
   liftTracking: {
     title: 'Lift tracking',
@@ -124,7 +124,7 @@ function detectStairStepping(moves) {
 
 /** Score micro-movement smoothness. */
 export function scoreSmoothness(microMoves, dpi = 800) {
-  if (!microMoves || microMoves.length < 10) {
+  if (!microMoves || microMoves.length < 5) {
     return {
       id: 'smoothness',
       score: null,

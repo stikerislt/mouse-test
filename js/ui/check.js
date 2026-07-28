@@ -11,12 +11,15 @@ import {
 } from '../core/input.js';
 import { formatNum } from '../core/stats.js';
 import { renderVerdict } from './verdict.js';
-import { setRestartCallback } from './shell.js';
+import { setRestartCallback, setStopCallback } from './shell.js';
 
 const REST_MS = 20000;
 const CONNECTION_MS = 5000;
 const SWIPE_IDLE_MS = 150;
 const MIN_SWIPE_DIST = 50;
+const SMOOTHNESS_MIN_MS = 4000;
+const SMOOTHNESS_MAX_MS = 10000;
+const SMOOTHNESS_MIN_SAMPLES = 5;
 
 export function renderCheck(container) {
   const config = loadConfig();
@@ -37,6 +40,7 @@ export function renderCheck(container) {
     unsub = null;
     if (raf) cancelAnimationFrame(raf);
     raf = null;
+    setStopCallback(null);
   }
 
   function render() {
@@ -144,7 +148,7 @@ export function renderCheck(container) {
       extra = `<p class="flow-tip-inline">Put two tape marks <strong>${formatNum(tape, 0)} cm</strong> apart on your pad first.</p>`;
     }
     if (id === 'liftTracking') {
-      extra = `<button class="btn btn-secondary" id="mark-lift" disabled>I lifted it</button>`;
+      extra = '';
     }
     if (id === 'acceleration') {
       extra = `<p class="flow-phase" id="accel-phase">Phase: <strong>Slow swipes</strong> (3 needed)</p>`;
@@ -161,10 +165,12 @@ export function renderCheck(container) {
           <p class="flow-lead">${meta.question}</p>
         </div>
         <div class="check-area" id="check-area" tabindex="-1">
+          <button type="button" class="btn btn-ghost btn-sm check-skip-floating" id="step-skip-locked" hidden>Skip (Esc)</button>
           <div class="check-area-inner" id="check-live">
             <span class="check-pulse"></span>
             <span id="check-status">Tap Start when ready</span>
           </div>
+          ${id === 'liftTracking' ? '<button type="button" class="btn btn-secondary check-lift-btn" id="mark-lift" disabled>I lifted it</button>' : ''}
         </div>
         <p class="check-instruction">${meta.instruction}</p>
         ${extra}
@@ -172,6 +178,7 @@ export function renderCheck(container) {
           <button class="btn btn-primary btn-lg" id="step-start">Start this step</button>
           <button class="btn btn-ghost" id="step-skip">Skip step</button>
         </div>
+        <p class="hint check-esc-hint">While a step is running, press <kbd>Esc</kbd> to skip.</p>
       </div>
     `;
 
@@ -179,6 +186,7 @@ export function renderCheck(container) {
     const statusEl = container.querySelector('#check-status');
     const startBtn = container.querySelector('#step-start');
     const skipBtn = container.querySelector('#step-skip');
+    const skipLockedBtn = container.querySelector('#step-skip-locked');
 
     function setStatus(msg, cls = '') {
       statusEl.textContent = msg;
@@ -192,6 +200,9 @@ export function renderCheck(container) {
       unsub?.();
       unsub = null;
       if (raf) cancelAnimationFrame(raf);
+      raf = null;
+      setStopCallback(null);
+      if (skipLockedBtn) skipLockedBtn.hidden = true;
       checkResults[id] = result;
       saveTestResult(id, result);
       stepIndex++;
@@ -204,6 +215,7 @@ export function renderCheck(container) {
     }
 
     function skipStep() {
+      releaseLock();
       finishStep({
         id,
         score: null,
@@ -214,13 +226,26 @@ export function renderCheck(container) {
       });
     }
 
-    skipBtn.addEventListener('click', skipStep);
+    skipBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      skipStep();
+    });
+    skipLockedBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      skipStep();
+    });
+
+    setStopCallback(() => {
+      if (running) skipStep();
+    });
 
     startBtn.addEventListener('click', async () => {
       if (running) return;
       running = true;
       startBtn.disabled = true;
-      skipBtn.disabled = true;
+      if (skipLockedBtn) skipLockedBtn.hidden = false;
       resetTotals();
       startSession();
       startCapture();
@@ -277,8 +302,7 @@ function createStepState(id, cfg) {
       return { ...base, movements: [], totalMove: 0, events: 0 };
     case 'smoothness': {
       const dpi = cfg.dpi || 800;
-      const distThreshold = Math.max(2, Math.round(dpi / 400));
-      return { ...base, microMoves: [], distThreshold };
+      return { ...base, microMoves: [], maxDist: Math.max(12, Math.round(dpi / 60)), dpi };
     }
     case 'liftTracking':
       return { ...base, lifts: [], liftStart: null };
@@ -312,7 +336,9 @@ function handleStepInput(id, sample, state, setStatus, finishStep) {
       }
       break;
     case 'smoothness':
-      if (sample.dist > 0 && sample.dist < state.distThreshold) {
+      if (sample.dist <= 0) break;
+      // Accept gentle motion: small per-tick steps or low speed (not fast swipes).
+      if (sample.dist <= state.maxDist || (sample.speed > 0 && sample.speed < 4)) {
         state.microMoves.push({ dx: sample.dx, dy: sample.dy });
       }
       break;
@@ -401,12 +427,21 @@ function handleStepTick(id, state, setStatus, finishStep) {
       }
       break;
     }
-    case 'smoothness':
-      setStatus(`${state.microMoves.length} slow samples — keep moving gently`, 'active');
-      if (elapsed >= 8000 && state.microMoves.length >= 10) {
-        finishStep(scoreSmoothness(state.microMoves, loadConfig().dpi));
+    case 'smoothness': {
+      const needed = SMOOTHNESS_MIN_SAMPLES;
+      const left = Math.max(0, Math.ceil((SMOOTHNESS_MAX_MS - elapsed) / 1000));
+      if (state.microMoves.length === 0 && elapsed > 2000) {
+        setStatus('Move slowly inside the box — or press Esc to skip', 'active');
+      } else {
+        setStatus(`${state.microMoves.length}/${needed} gentle samples (${left}s left)`, 'active');
+      }
+      if (state.microMoves.length >= needed && elapsed >= SMOOTHNESS_MIN_MS) {
+        finishStep(scoreSmoothness(state.microMoves, state.dpi));
+      } else if (elapsed >= SMOOTHNESS_MAX_MS) {
+        finishStep(scoreSmoothness(state.microMoves, state.dpi));
       }
       break;
+    }
     case 'liftTracking':
       setStatus('Move, lift, tap "I lifted it" — 3 times', 'active');
       break;
