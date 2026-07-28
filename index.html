@@ -75,12 +75,8 @@
     if (location.protocol === 'file:') {
       document.getElementById('file-protocol-block').hidden = false;
       document.getElementById('app').style.display = 'none';
-    } else {
-      var s = document.createElement('script');
-      s.type = 'module';
-      s.src = 'js/main.js?v=20260728b';
-      document.body.appendChild(s);
     }
   </script>
+  <script type="module" src="js/main.js?v=20260728c"></script>
 </body>
 </html>
