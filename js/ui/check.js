@@ -148,7 +148,7 @@ export function renderCheck(container) {
       extra = `<p class="flow-tip-inline">Put two tape marks <strong>${formatNum(tape, 0)} cm</strong> apart on your pad first.</p>`;
     }
     if (id === 'liftTracking') {
-      extra = '';
+      extra = `<p class="lift-space-hint">Each time you lift the mouse, press <kbd>Space</kbd> on your keyboard (not a mouse button).</p>`;
     }
     if (id === 'acceleration') {
       extra = `<p class="flow-phase" id="accel-phase">Phase: <strong>Slow swipes</strong> (3 needed)</p>`;
@@ -170,7 +170,7 @@ export function renderCheck(container) {
             <span class="check-pulse"></span>
             <span id="check-status">Tap Start when ready</span>
           </div>
-          ${id === 'liftTracking' ? '<button type="button" class="btn btn-secondary check-lift-btn" id="mark-lift" disabled>I lifted it</button>' : ''}
+          ${id === 'liftTracking' ? '<p class="lift-space-prompt"><kbd>Space</kbd> = I lifted the mouse</p>' : ''}
         </div>
         <p class="check-instruction">${meta.instruction}</p>
         ${extra}
@@ -178,7 +178,7 @@ export function renderCheck(container) {
           <button class="btn btn-primary btn-lg" id="step-start">Start this step</button>
           <button class="btn btn-ghost" id="step-skip">Skip step</button>
         </div>
-        <p class="hint check-esc-hint">While a step is running, press <kbd>Esc</kbd> to skip.</p>
+        <p class="hint check-esc-hint">${id === 'liftTracking' ? 'Press <kbd>Space</kbd> when you lift. <kbd>Esc</kbd> to skip.' : 'While a step is running, press <kbd>Esc</kbd> to skip.'}</p>
       </div>
     `;
 
@@ -187,6 +187,7 @@ export function renderCheck(container) {
     const startBtn = container.querySelector('#step-start');
     const skipBtn = container.querySelector('#step-skip');
     const skipLockedBtn = container.querySelector('#step-skip-locked');
+    let stepCleanup = null;
 
     function setStatus(msg, cls = '') {
       statusEl.textContent = msg;
@@ -201,6 +202,8 @@ export function renderCheck(container) {
       unsub = null;
       if (raf) cancelAnimationFrame(raf);
       raf = null;
+      stepCleanup?.();
+      stepCleanup = null;
       setStopCallback(null);
       if (skipLockedBtn) skipLockedBtn.hidden = true;
       checkResults[id] = result;
@@ -245,37 +248,51 @@ export function renderCheck(container) {
       if (running) return;
       running = true;
       startBtn.disabled = true;
-      if (skipLockedBtn) skipLockedBtn.hidden = false;
+      const needsLock = id !== 'liftTracking';
+      if (needsLock && skipLockedBtn) skipLockedBtn.hidden = false;
       resetTotals();
       startSession();
       startCapture();
-      setStatus('Checking…', 'active');
       captureArea.classList.add('active');
-      await requestLock(captureArea);
 
       stepState = createStepState(id, cfg);
+
+      if (id === 'liftTracking') {
+        setStatus('Move on pad → lift mouse → press Space (3 times)', 'active');
+        let lastClient = null;
+        const onPtr = (e) => {
+          if (!running) return;
+          if (lastClient) {
+            const dx = e.clientX - lastClient.x;
+            const dy = e.clientY - lastClient.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 0.5) {
+              handleStepInput(id, { dx, dy, dist, dt: 16, speed: 0 }, stepState, setStatus, finishStep);
+            }
+          }
+          lastClient = { x: e.clientX, y: e.clientY };
+        };
+        const onSpace = (e) => {
+          if (!running || e.code !== 'Space') return;
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+          e.preventDefault();
+          markLift(stepState, setStatus, (result) => finishStep(result));
+        };
+        document.addEventListener('pointermove', onPtr);
+        document.addEventListener('keydown', onSpace);
+        stepCleanup = () => {
+          document.removeEventListener('pointermove', onPtr);
+          document.removeEventListener('keydown', onSpace);
+        };
+      } else {
+        setStatus('Checking…', 'active');
+        await requestLock(captureArea);
+      }
+
       unsub = onInput((sample) => {
         if (!running) return;
         handleStepInput(id, sample, stepState, setStatus, finishStep, container);
       });
-
-      if (id === 'liftTracking') {
-        const markBtn = container.querySelector('#mark-lift');
-        if (markBtn) {
-          markBtn.disabled = false;
-          markBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (!running) return;
-            stepState.liftStart = performance.now();
-            stepState.lifts.push({ duration: 0, distance: 0, t: stepState.liftStart });
-            setStatus(`Lift ${stepState.lifts.length} marked — keep mouse in the air`);
-            if (stepState.lifts.length >= 3) {
-              const result = scoreLiftTracking(stepState.lifts);
-              finishStep(result);
-            }
-          });
-        }
-      }
 
       function tick() {
         if (!running) return;
@@ -305,7 +322,7 @@ function createStepState(id, cfg) {
       return { ...base, microMoves: [], maxDist: Math.max(12, Math.round(dpi / 60)), dpi };
     }
     case 'liftTracking':
-      return { ...base, lifts: [], liftStart: null };
+      return { ...base, lifts: [], liftStart: null, lastMark: 0 };
     case 'swipeConsistency':
       return { ...base, runs: [], swipeDx: 0, swipeDy: 0, swiping: false, idleTimer: null };
     case 'acceleration':
@@ -443,7 +460,9 @@ function handleStepTick(id, state, setStatus, finishStep) {
       break;
     }
     case 'liftTracking':
-      setStatus('Move, lift, tap "I lifted it" — 3 times', 'active');
+      if (state.lifts.length) {
+        setStatus(`Lift ${state.lifts.length}/3 — move, lift, press Space`, 'active');
+      }
       break;
     case 'swipeConsistency':
       setStatus(state.runs.length
@@ -452,5 +471,18 @@ function handleStepTick(id, state, setStatus, finishStep) {
       break;
     case 'acceleration':
       break;
+  }
+}
+
+function markLift(state, setStatus, finishStep) {
+  const now = performance.now();
+  if (state.lastMark && now - state.lastMark < 500) return;
+  state.lastMark = now;
+  state.liftStart = now;
+  state.lifts.push({ duration: 0, distance: 0, t: now });
+  const n = state.lifts.length;
+  setStatus(`Lift ${n}/3 recorded — move on pad again, then lift + Space`, 'active');
+  if (n >= 3) {
+    setTimeout(() => finishStep(scoreLiftTracking(state.lifts)), 420);
   }
 }

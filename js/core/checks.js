@@ -34,7 +34,7 @@ export const CHECK_META = {
   liftTracking: {
     title: 'Lift tracking',
     question: 'Does it stop tracking when you lift?',
-    instruction: 'Move a little, lift the mouse off the pad, then tap "I lifted it". Repeat 2–3 times.',
+    instruction: 'Move on the pad, lift the mouse off the surface, then press Space on your keyboard. Put the mouse back down, move again, lift, Space — 3 times total.',
   },
   swipeConsistency: {
     title: 'Swipe consistency',

@@ -283,17 +283,27 @@ body::before {
   pointer-events: auto;
 }
 
-.check-esc-hint {
+.lift-space-hint,
+.lift-space-prompt {
   text-align: center;
+  margin: 12px 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.lift-space-prompt {
   margin-top: 8px;
 }
 
+.lift-space-hint kbd,
+.lift-space-prompt kbd,
 .check-esc-hint kbd {
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 4px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  font-size: 12px;
+  font-size: 13px;
+  color: var(--accent);
 }
 
 .check-pulse {
