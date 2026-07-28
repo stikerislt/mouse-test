@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Calibra Unit Tests</title>
+  <style>
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: #0b0d10; color: #e8ecf2; padding: 24px; }
+    h1 { font-family: Bahnschrift, "Segoe UI", sans-serif; color: #3dd6f5; }
+    .pass { color: #4ade80; }
+    .fail { color: #ff5c5c; font-weight: 600; }
+    .summary { font-size: 18px; margin: 12px 0 24px; }
+    .test { padding: 6px 0; border-bottom: 1px solid #252b36; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; }
+    .test .name { color: #8b95a8; }
+    .ok { color: #4ade80; }
+    .bad { color: #ff5c5c; }
+  </style>
+</head>
+<body>
+  <h1>Calibra Unit Tests</h1>
+  <div class="summary" id="summary">Running…</div>
+  <div id="results"></div>
+  <script type="module" src="tests.js"></script>
+</body>
+</html>
