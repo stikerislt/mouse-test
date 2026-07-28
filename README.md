@@ -23,7 +23,7 @@ Then open the URL shown in the terminal.
 ### Option C — Python
 
 ```bash
-python -m http.server 8080
+python -m http.server 5500
 ```
 
 Then open the URL shown in the terminal.
@@ -53,4 +53,4 @@ Vanilla HTML, CSS, JavaScript (ES modules). Pointer Lock API, localStorage. Full
 
 ## Unit tests
 
-Start the local server, then open **http://localhost:8080/test/**
+Start the local server, then open the test page at `/test/` using the URL shown in the terminal.
