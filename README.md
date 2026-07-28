@@ -2,9 +2,37 @@
 
 A simple, guided check that tells CS2 players whether their mouse and mousepad are working consistently — in about 3 minutes.
 
-## Usage
+## How to run (important)
 
-Open `index.html` in Chrome, Edge, or Firefox. No server or build step required.
+**Do not double-click `index.html`** — Chrome blocks the app on `file://` URLs.
+
+### Option A — one click (Windows)
+
+1. Double-click **`serve.bat`** in this folder
+2. Open **http://localhost:8080** in your browser
+
+### Option B — PowerShell
+
+```powershell
+cd path\to\mouse-test
+.\serve.ps1
+```
+
+Then open **http://localhost:8080**
+
+### Option C — Python
+
+```bash
+python -m http.server 8080
+```
+
+Then open **http://localhost:8080**
+
+### Option D — Node
+
+```bash
+npm start
+```
 
 ## What it does
 
@@ -21,8 +49,8 @@ Open `index.html` in Chrome, Edge, or Firefox. No server or build step required.
 
 ## Tech
 
-Vanilla HTML, CSS, JavaScript. Pointer Lock API, localStorage. Fully offline — no frameworks, no analytics.
+Vanilla HTML, CSS, JavaScript (ES modules). Pointer Lock API, localStorage. Fully offline once served locally — no frameworks, no analytics.
 
-## Tests
+## Unit tests
 
-Open `test/index.html` to run unit tests for `stats.js`, `checks.js`, and `scoring.js`.
+Start the local server, then open **http://localhost:8080/test/**

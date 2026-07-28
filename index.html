@@ -5,9 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calibra — Mouse Consistency Check</title>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <link rel="stylesheet" href="css/main.css?v=20260728">
+  <link rel="stylesheet" href="css/main.css?v=20260728b">
+  <style>
+    #file-protocol-block[hidden] { display: none !important; }
+    #file-protocol-block:not([hidden]) {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #0b0d10;
+      color: #e8ecf2;
+      padding: 32px 24px;
+      overflow-y: auto;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.6;
+    }
+    #file-protocol-block h1 { color: #3dd6f5; margin-bottom: 12px; font-size: 1.5rem; }
+    #file-protocol-block code, #file-protocol-block pre {
+      background: #161a21;
+      border: 1px solid #252b36;
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: block;
+      margin: 12px 0;
+      font-size: 14px;
+      overflow-x: auto;
+    }
+    #file-protocol-block ol { margin: 16px 0 16px 20px; }
+    #file-protocol-block li { margin: 8px 0; }
+    #file-protocol-block .muted { color: #8b95a8; font-size: 14px; }
+  </style>
+  <script>
+    if (location.protocol === 'file:') {
+      document.documentElement.classList.add('file-protocol');
+    }
+  </script>
 </head>
 <body>
+  <div id="file-protocol-block" hidden>
+    <h1>Calibra needs a local server</h1>
+    <p>Browsers block this app when opened directly from a folder (<code>file://</code>). That is normal — use one of these options:</p>
+    <ol>
+      <li><strong>Easiest:</strong> Double-click <code>serve.bat</code> in this folder, then open <a href="http://localhost:8080" style="color:#3dd6f5">http://localhost:8080</a></li>
+      <li><strong>PowerShell</strong> in this folder:
+        <pre>.\serve.ps1</pre>
+      </li>
+      <li><strong>Python</strong> (if installed):
+        <pre>python -m http.server 8080</pre>
+        Then open <code>http://localhost:8080</code>
+      </li>
+      <li><strong>GitHub Pages:</strong> use the live site if you enabled Pages on the repo</li>
+    </ol>
+    <p class="muted">Why? The app uses modern JavaScript modules, which only work over http:// or https:// — not file://.</p>
+  </div>
+
   <div id="app" class="app">
     <header class="top-bar">
       <div class="top-brand">
@@ -19,6 +70,16 @@
     <div id="env-warnings" class="env-warnings"></div>
     <main class="content" id="content"></main>
   </div>
-  <script type="module" src="js/main.js?v=20260728"></script>
+  <script>
+    if (location.protocol === 'file:') {
+      document.getElementById('file-protocol-block').hidden = false;
+      document.getElementById('app').style.display = 'none';
+    } else {
+      var s = document.createElement('script');
+      s.type = 'module';
+      s.src = 'js/main.js?v=20260728b';
+      document.body.appendChild(s);
+    }
+  </script>
 </body>
 </html>
